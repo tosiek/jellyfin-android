@@ -5,9 +5,11 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.core.net.toUri
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.withStarted
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -42,6 +44,16 @@ class ActivityEventHandler(
         }
     }
 
+    /**
+     * Events are also handled while the activity is stopped, a fragment transaction after onSaveInstanceState throws
+     * (opening the settings while a system dialog covered the app crashed): wait until the activity is started.
+     */
+    private inline fun <reified T : Fragment> MainActivity.showFragment(args: Bundle? = null) {
+        lifecycleScope.launch {
+            lifecycle.withStarted { supportFragmentManager.addFragment<T>(args) }
+        }
+    }
+
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun MainActivity.handleEvent(event: ActivityEvent) {
         when (event) {
@@ -64,7 +76,7 @@ class ActivityEventHandler(
                     putParcelable(Constants.EXTRA_MEDIA_PLAY_OPTIONS, event.playOptions)
                     putParcelable(Constants.EXTRA_WEB_PREFERENCES, event.preferences)
                 }
-                supportFragmentManager.addFragment<PlayerFragment>(args)
+                showFragment<PlayerFragment>(args)
             }
             is ActivityEvent.OpenUrl -> {
                 try {
@@ -81,7 +93,7 @@ class ActivityEventHandler(
                 }
             }
             ActivityEvent.OpenDownloads -> {
-                supportFragmentManager.addFragment<DownloadsFragment>()
+                showFragment<DownloadsFragment>()
             }
             is ActivityEvent.CastMessage -> {
                 val action = event.action
@@ -103,7 +115,7 @@ class ActivityEventHandler(
                 }
             }
             ActivityEvent.OpenSettings -> {
-                supportFragmentManager.addFragment<SettingsFragment>()
+                showFragment<SettingsFragment>()
             }
             ActivityEvent.SelectServer -> {
                 mainViewModel.resetServer()
