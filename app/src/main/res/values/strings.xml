@@ -180,4 +180,84 @@
     <string name="download_location_not_set_description">To download media, please select a folder where the files should be stored.</string>
     <string name="download_location_inaccessible">Download location inaccessible</string>
     <string name="download_location_inaccessible_description">The selected download location is no longer accessible. Please select a different folder to resume downloads.</string>
+
+    <!-- Certificates screen -->
+    <string name="tls_certificates">Certificates</string>
+    <string name="tls_certificates_title">Certificates for %1$s</string>
+    <string name="tls_ca_section">Trusted certificate authorities</string>
+    <string name="tls_ca_system_info">Certificates installed in Android\'s system store (Settings › Security › Encryption &amp; credentials) are always trusted. Certificates imported here are only trusted for %1$s.</string>
+    <string name="tls_ca_none">No imported certificate authorities.</string>
+    <string name="tls_ca_import">Import CA certificate…</string>
+    <string name="tls_ca_item">%1$s\nExpires %2$s · SHA-256 %3$s</string>
+    <string name="tls_ca_remove_confirm">Stop trusting this certificate authority for %1$s?</string>
+    <string name="tls_client_section">Client certificate</string>
+    <string name="tls_client_none">No client certificate.</string>
+    <string name="tls_client_system">From system store: %1$s</string>
+    <string name="tls_client_imported">Imported: %1$s</string>
+    <string name="tls_client_imported_fallback">Imported (stored encrypted by the app): %1$s</string>
+    <string name="tls_client_import">Import client certificate (.p12 / .pfx)…</string>
+    <string name="tls_client_choose_system">Choose from system store…</string>
+    <string name="tls_client_remove_confirm">Stop using this client certificate for %1$s?</string>
+    <string name="tls_client_requested">The server asked for a client certificate.</string>
+    <string name="tls_import_from_url">Import from URL…</string>
+    <string name="tls_import_url_hint">https://example.lan/certificate.p12</string>
+    <string name="tls_import_download_failed">Unable to download the file: %1$s</string>
+    <string name="tls_password">Password</string>
+    <string name="tls_choose_key">Choose a certificate</string>
+    <string name="tls_trust">Trust</string>
+    <string name="tls_contained_ca_title">CA certificate in the file</string>
+    <plurals name="tls_contained_ca_message">
+        <item quantity="one">This file also contains the CA certificate %1$s. Trust it for %2$s?\n\nOnly needed when this CA also issued the server\'s certificate. The client certificate works without it.</item>
+        <item quantity="other">This file also contains the CA certificates\n%1$s\nTrust them for %2$s?\n\nOnly needed when one of them also issued the server\'s certificate. The client certificate works without them.</item>
+    </plurals>
+    <string name="tls_contained_ca_skip">Don\'t trust</string>
+    <string name="tls_contained_client_title">Client certificate in the file</string>
+    <string name="tls_contained_client_message">This file also contains the client certificate %1$s. Use it for this server?</string>
+    <string name="tls_contained_client_skip">Don\'t use</string>
+    <string name="tls_import_no_ca">This file contains no CA certificate. CA certificates are .pem, .crt, .cer, .der or .p7b files, or a .p12 / .pfx file that contains them.</string>
+    <string name="tls_use">Use</string>
+    <string name="tls_remove">Remove</string>
+    <string name="tls_certificate_details">Subject: %1$s\nIssuer: %2$s\nValid: %3$s – %4$s\nSHA-256: %5$s</string>
+    <string name="tls_warnings">Warnings:</string>
+
+    <!-- Advanced section of the connect screen -->
+    <string name="tls_advanced">Advanced</string>
+    <string name="tls_https_only">Certificates can only be used with https:// servers.</string>
+    <string name="tls_ca_certificate">CA certificate</string>
+    <string name="tls_client_certificate">Client certificate</string>
+    <string name="tls_none">None</string>
+    <string name="tls_choose">Choose…</string>
+    <string name="tls_load_from_url">Load certificates from URL (network)</string>
+    <string name="tls_new">(new)</string>
+    <string name="tls_unavailable">(no longer available)</string>
+    <string name="tls_client_imported_key">Imported certificate</string>
+    <string name="tls_password_for">Enter the password for %1$s</string>
+    <string name="tls_password_retry">Wrong password for %1$s, try again</string>
+    <string name="tls_import_read_failed">Unable to read the file: %1$s</string>
+
+    <!-- Connection problems -->
+    <string name="tls_problem_untrusted">The server certificate is not trusted (issued by %1$s). Import its CA under Certificates for %2$s.</string>
+    <string name="tls_problem_expired">The server certificate expired on %1$s.</string>
+    <string name="tls_problem_not_yet_valid">The server certificate is not valid until %1$s.</string>
+    <string name="tls_problem_hostname">The server certificate does not match the address %1$s.</string>
+    <string name="tls_problem_client_required">The server %1$s requires a client certificate.</string>
+    <string name="tls_problem_client_unavailable">The client certificate for %1$s is no longer available.</string>
+    <string name="tls_problem_client_rejected">The server %1$s rejected the client certificate.</string>
+
+    <!-- Import errors -->
+    <string name="tls_import_unrecognized">This file is not recognized. Supported are CA certificates as .pem, .crt, .cer, .der or .p7b and client certificates as .p12 or .pfx.</string>
+    <string name="tls_import_not_pkcs12">Client certificates must be a .p12 or .pfx file that contains both the certificate and its private key.</string>
+    <string name="tls_import_wrong_or_unsupported_password">Wrong password. If the password is correct: Android cannot read some certificate files protected with a password containing special characters (non-ASCII). Use a password with only English letters, digits and symbols.</string>
+    <string name="tls_import_wrong_password">Wrong password, or the file is damaged.</string>
+    <string name="tls_import_unsupported_encryption">This file is protected with an encryption method that Android %1$s cannot read (%2$s). Supported on this device: %3$s.</string>
+    <string name="tls_import_no_private_key">This file does not contain a private key with its certificate.</string>
+    <string name="tls_import_unsupported_key">This key type (%1$s) cannot be used for secure connections on Android. Supported key types: RSA (2048 bits or more) and EC (P-256, P-384).</string>
+    <string name="tls_import_unreadable_key">The private key in this file cannot be read on Android %1$s, its key type is probably not supported. Supported key types: RSA (2048 bits or more) and EC (P-256, P-384).</string>
+    <string name="tls_import_key_unusable">This private key cannot be used for secure connections on Android %1$s.</string>
+    <string name="tls_import_keystore_timeout">The certificate storage of this device did not answer. Try again, restart the device if this keeps happening.</string>
+    <string name="tls_import_expired">This certificate expired on %1$s.</string>
+    <string name="tls_import_not_yet_valid">This certificate is not valid until %1$s.</string>
+    <string name="tls_import_insecure_signature">This certificate uses an insecure signature (%1$s) and cannot be used.</string>
+    <string name="tls_warning_not_ca">This file contains a server certificate, not a certificate authority. It will only work for this exact server certificate.</string>
+    <string name="tls_warning_outdated">This certificate uses outdated security (%1$s) that newer Android versions and the web interface may reject.</string>
 </resources>
