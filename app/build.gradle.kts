@@ -39,6 +39,9 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    // Share the TLS test fixtures between unit and instrumented tests
+    sourceSets["androidTest"].assets.directories.add("src/test/resources")
+
     signingConfigs {
         val keystoreFile = getProperty("keystore.file")
         val keystorePassword = getProperty("keystore.password")
@@ -188,6 +191,8 @@ dependencies {
     testImplementation(libs.bundles.kotest)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.bundles.androidx.test)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // Formatting rules for detekt
     detektPlugins(libs.detekt.formatting)
