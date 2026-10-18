@@ -27,18 +27,23 @@ import org.jellyfin.mobile.app.AppPreferences
 import org.jellyfin.mobile.app.StorageManager
 import org.jellyfin.mobile.databinding.FragmentSettingsBinding
 import org.jellyfin.mobile.downloads.DownloadMethod
+import org.jellyfin.mobile.tls.CertificatesFragment
+import org.jellyfin.mobile.tls.TlsEndpoint
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.applyWindowInsetsAsMargins
+import org.jellyfin.mobile.utils.extensions.addFragment
 import org.jellyfin.mobile.utils.extensions.requireMainActivity
 import org.jellyfin.mobile.utils.isPackageInstalled
 import org.jellyfin.mobile.utils.withThemedContext
+import org.jellyfin.sdk.api.client.ApiClient
 import org.koin.android.ext.android.inject
 
 class SettingsFragment : Fragment(), BackPressInterceptor {
 
     private val appPreferences: AppPreferences by inject()
     private val storageManager: StorageManager by inject()
+    private val apiClient: ApiClient by inject()
 
     private val storageLocationPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -289,11 +294,30 @@ class SettingsFragment : Fragment(), BackPressInterceptor {
                 false
             }
         }
+
+        val serverAddress = apiClient.baseUrl
+        val endpoint = TlsEndpoint.fromUrl(serverAddress)
+        if (serverAddress != null && endpoint != null) {
+            categoryHeader(PREF_CATEGORY_SECURITY) {
+                titleRes = R.string.tls_certificates
+            }
+            pref(PREF_CERTIFICATES) {
+                titleRes = R.string.tls_certificates
+                summary = endpoint.display
+                defaultOnClick {
+                    parentFragmentManager.addFragment<CertificatesFragment>(
+                        CertificatesFragment.arguments(serverAddress),
+                    )
+                }
+            }
+        }
     }
 
     companion object {
         const val PREF_CATEGORY_MUSIC_PLAYER = "pref_category_music"
         const val PREF_CATEGORY_VIDEO_PLAYER = "pref_category_video"
         const val PREF_CATEGORY_DOWNLOADS = "pref_category_downloads"
+        const val PREF_CATEGORY_SECURITY = "pref_category_security"
+        const val PREF_CERTIFICATES = "pref_certificates"
     }
 }
