@@ -1,6 +1,7 @@
 package org.jellyfin.mobile.tls
 
 import android.content.Context
+import android.os.Build
 import android.os.Looper
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 import kotlin.concurrent.thread
 
@@ -176,7 +178,8 @@ class TlsManager private constructor(context: Context) {
 
 /**
  * Socket factory that selects the [SSLSocketFactory] by the host and port of the connection. Sockets created without a
- * host use [default], which only trusts the platform and presents no client certificate.
+ * host use [default], which only trusts the platform and presents no client certificate. Sockets offer the post-quantum
+ * key exchange from Android 17.
  */
 private class EndpointSslSocketFactory(
     private val forEndpoint: (host: String?, port: Int) -> SSLSocketFactory,
@@ -184,19 +187,33 @@ private class EndpointSslSocketFactory(
 ) : SSLSocketFactory() {
     override fun getDefaultCipherSuites(): Array<String> = default().defaultCipherSuites
     override fun getSupportedCipherSuites(): Array<String> = default().supportedCipherSuites
-    override fun createSocket(): Socket = default().createSocket()
+    override fun createSocket(): Socket = default().createSocket().offerPostQuantum()
 
     // Used by OkHttp and HttpsURLConnection, host is the literal host of the URL
     override fun createSocket(socket: Socket?, host: String?, port: Int, autoClose: Boolean): Socket =
-        forEndpoint(host, port).createSocket(socket, host, port, autoClose)
+        forEndpoint(host, port).createSocket(socket, host, port, autoClose).offerPostQuantum()
 
-    override fun createSocket(host: String?, port: Int): Socket = forEndpoint(host, port).createSocket(host, port)
+    override fun createSocket(host: String?, port: Int): Socket = forEndpoint(
+        host,
+        port
+    ).createSocket(host, port).offerPostQuantum()
     override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int): Socket =
-        forEndpoint(host, port).createSocket(host, port, localHost, localPort)
+        forEndpoint(host, port).createSocket(host, port, localHost, localPort).offerPostQuantum()
 
     override fun createSocket(host: InetAddress?, port: Int): Socket =
-        forEndpoint(host?.hostAddress, port).createSocket(host, port)
+        forEndpoint(host?.hostAddress, port).createSocket(host, port).offerPostQuantum()
 
     override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int): Socket =
-        forEndpoint(address?.hostAddress, port).createSocket(address, port, localAddress, localPort)
+        forEndpoint(address?.hostAddress, port).createSocket(address, port, localAddress, localPort).offerPostQuantum()
+}
+
+// Android 17 supports the hybrid post-quantum key exchange X25519MLKEM768 but does not offer it by default. Offered
+// first, followed by the default groups of Android 17 for servers without it. Protects recorded traffic against
+// decryption by a future quantum computer, authentication still uses the classic (RSA, EC) certificates and keys.
+private val NAMED_GROUPS = arrayOf("X25519MLKEM768", "x25519", "secp256r1", "secp384r1")
+
+private fun Socket.offerPostQuantum(): Socket = apply {
+    if (this is SSLSocket && Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
+        sslParameters = sslParameters.apply { namedGroups = NAMED_GROUPS }
+    }
 }
