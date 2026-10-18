@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -44,6 +46,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -53,6 +56,10 @@ import kotlinx.coroutines.launch
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.app.ApiClientController
 import org.jellyfin.mobile.setup.ConnectionHelper
+import org.jellyfin.mobile.tls.CertificatesSection
+import org.jellyfin.mobile.tls.TlsEndpoint
+import org.jellyfin.mobile.tls.describeTlsProblem
+import org.jellyfin.mobile.tls.rememberCertificatesSectionState
 import org.jellyfin.mobile.ui.state.CheckUrlState
 import org.jellyfin.mobile.ui.state.ServerSelectionMode
 import org.jellyfin.mobile.ui.utils.CenterRow
@@ -68,18 +75,24 @@ fun ServerSelection(
     onConnected: suspend (String) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var serverSelectionMode by remember { mutableStateOf(ServerSelectionMode.ADDRESS) }
     var hostname by remember { mutableStateOf("") }
     val serverSuggestions = remember { mutableStateListOf<ServerSuggestion>() }
     var checkUrlState by remember<MutableState<CheckUrlState>> { mutableStateOf(CheckUrlState.Unchecked) }
     var externalError by remember { mutableStateOf(showExternalConnectionError) }
+    // TLS reason of the external error, e.g. the WebView could not load the server because its certificate is untrusted
+    var externalTlsProblem by remember { mutableStateOf<String?>(null) }
+    // Certificates selected in the advanced section, only kept after a successful connection check
+    val certificates = rememberCertificatesSectionState { TlsEndpoint.fromUrl(hostname) }
 
     // Prefill currently selected server if available
     LaunchedEffect(Unit) {
         val server = apiClientController.loadSavedServer()
         if (server != null) {
             hostname = server.hostname
+            if (externalError) externalTlsProblem = describeTlsProblem(context, server.hostname)
         }
     }
 
@@ -115,10 +128,17 @@ fun ServerSelection(
         externalError = false
         checkUrlState = CheckUrlState.Pending
         coroutineScope.launch {
+            certificates.apply()?.let { error ->
+                checkUrlState = CheckUrlState.Error(error)
+                return@launch
+            }
             val state = connectionHelper.checkServerUrl(hostname)
             checkUrlState = state
             if (state is CheckUrlState.Success) {
+                certificates.onConnected()
                 onConnected(state.address)
+            } else {
+                certificates.onFailed(retry = { onSubmit() })
             }
         }
     }
@@ -137,7 +157,8 @@ fun ServerSelection(
                 ServerSelectionMode.ADDRESS -> AddressSelection(
                     text = hostname,
                     errorText = when {
-                        externalError -> stringResource(R.string.connection_error_cannot_connect)
+                        externalError -> stringResource(R.string.connection_error_cannot_connect) +
+                            externalTlsProblem?.let { "\n\n$it" }.orEmpty()
                         else -> (checkUrlState as? CheckUrlState.Error)?.message
                     },
                     loading = checkUrlState is CheckUrlState.Pending,
@@ -154,6 +175,7 @@ fun ServerSelection(
                     onSubmit = {
                         onSubmit()
                     },
+                    advanced = { CertificatesSection(certificates) },
                 )
                 ServerSelectionMode.AUTO_DISCOVERY -> ServerDiscoveryList(
                     serverSuggestions = serverSuggestions,
@@ -171,6 +193,7 @@ fun ServerSelection(
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 @Composable
 private fun AddressSelection(
@@ -180,8 +203,10 @@ private fun AddressSelection(
     onTextChange: (String) -> Unit,
     onDiscoveryClick: () -> Unit,
     onSubmit: () -> Unit,
+    advanced: @Composable () -> Unit,
 ) {
-    Column {
+    // Scrollable, the expanded "Advanced" section does not fit on small screens
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         ServerUrlField(
             text = text,
             errorText = errorText,
@@ -200,6 +225,7 @@ private fun AddressSelection(
                 text = stringResource(R.string.choose_server_button_text),
                 onClick = onDiscoveryClick,
             )
+            advanced()
         } else {
             CenterRow {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))

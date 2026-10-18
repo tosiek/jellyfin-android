@@ -1,6 +1,7 @@
 package org.jellyfin.mobile.ui.screens.connect
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,12 +40,15 @@ fun ConnectScreen(
                 .padding(horizontal = 16.dp),
         ) {
             LogoHeader()
-            ServerSelection(
-                showExternalConnectionError = showExternalConnectionError,
-                onConnected = { hostname ->
-                    mainViewModel.switchServer(hostname)
-                },
-            )
+            // Takes the remaining space and scrolls, keeps the downloads button visible
+            Box(modifier = Modifier.weight(1f, fill = false)) {
+                ServerSelection(
+                    showExternalConnectionError = showExternalConnectionError,
+                    onConnected = { hostname ->
+                        mainViewModel.switchServer(hostname)
+                    },
+                )
+            }
             StyledTextButton(
                 onClick = { activityEventHandler.emit(ActivityEvent.OpenDownloads) },
                 text = stringResource(R.string.view_downloads),
