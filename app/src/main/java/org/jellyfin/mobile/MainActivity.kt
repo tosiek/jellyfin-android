@@ -27,6 +27,7 @@ import org.jellyfin.mobile.player.cast.Chromecast
 import org.jellyfin.mobile.player.cast.IChromecast
 import org.jellyfin.mobile.player.ui.PlayerFragment
 import org.jellyfin.mobile.setup.ConnectFragment
+import org.jellyfin.mobile.tls.TlsProblemToast
 import org.jellyfin.mobile.utils.AndroidVersion
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.BluetoothPermissionHelper
@@ -129,6 +130,13 @@ class MainActivity : AppCompatActivity() {
 
         // Subscribe to activity events
         with(activityEventHandler) { subscribe() }
+
+        // Explain TLS problems of jellyfin-web and the player, the connect screen has its own message
+        lifecycle.addObserver(
+            TlsProblemToast(this) {
+                supportFragmentManager.findFragmentById(R.id.fragment_container) is ConnectFragment
+            },
+        )
 
         // Load UI
         lifecycleScope.launch {

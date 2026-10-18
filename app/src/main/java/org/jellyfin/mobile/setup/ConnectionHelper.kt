@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.jellyfin.mobile.R
+import org.jellyfin.mobile.tls.TlsMessages
 import org.jellyfin.mobile.ui.state.CheckUrlState
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.discovery.LocalServerDiscovery
@@ -75,7 +76,8 @@ class ConnectionHelper(
                         append(":\n")
                         append(
                             unreachableServers.joinToString(separator = "\n") { result ->
-                                "\u00b7 ${result.address}"
+                                val tlsProblem = TlsMessages.describe(context, result.address, result.issues)
+                                "\u00b7 ${result.address}" + tlsProblem?.let { "\n  $it" }.orEmpty()
                             },
                         )
                     }
