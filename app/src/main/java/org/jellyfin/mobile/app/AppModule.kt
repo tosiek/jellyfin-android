@@ -20,6 +20,7 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.TsExtractor
 import androidx.work.WorkManager
 import coil3.ImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.kt.withAssMkvSupport
 import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
@@ -42,6 +43,7 @@ import org.jellyfin.mobile.player.qualityoptions.QualityOptionsProvider
 import org.jellyfin.mobile.player.source.MediaSourceResolver
 import org.jellyfin.mobile.player.ui.PlayerFragment
 import org.jellyfin.mobile.setup.ConnectionHelper
+import org.jellyfin.mobile.tls.TlsManager
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.PermissionRequestHelper
 import org.jellyfin.mobile.utils.extractId
@@ -63,8 +65,12 @@ private const val TS_SEARCH_PACKETS = 1800
 
 val applicationModule = module {
     single { AppPreferences(androidApplication()) }
-    single { OkHttpClient() }
-    single { ImageLoader(androidApplication()) }
+    single<OkHttpClient> { TlsManager.get(androidApplication()).okHttpClient }
+    single {
+        ImageLoader.Builder(androidApplication())
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { get<OkHttpClient>() })) }
+            .build()
+    }
     single { PermissionRequestHelper() }
     single { RemoteVolumeProvider(get()) }
     single(named(PLAYER_EVENT_CHANNEL)) { Channel<PlayerEvent>() }
