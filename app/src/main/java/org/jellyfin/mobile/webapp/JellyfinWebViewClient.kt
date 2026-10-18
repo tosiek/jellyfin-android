@@ -1,6 +1,7 @@
 package org.jellyfin.mobile.webapp
 
 import android.net.http.SslError
+import android.webkit.ClientCertRequest
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jellyfin.mobile.MainViewModel
 import org.jellyfin.mobile.data.entity.ServerEntity
+import org.jellyfin.mobile.tls.WebViewTls
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.initLocale
 import org.jellyfin.mobile.utils.inject
@@ -40,11 +42,17 @@ abstract class JellyfinWebViewClient(
 
     abstract fun onErrorReceived()
 
+    private val webViewTls = WebViewTls(coroutineScope)
+
+    // TLS problems are only reported once jellyfin-web runs, before that a failed load shows the connect screen
+    private var webappLoaded = false
+
     override fun shouldInterceptRequest(webView: WebView, request: WebResourceRequest): WebResourceResponse? {
         val url = request.url
         val path = url.path?.lowercase(Locale.ROOT) ?: return null
         return when {
             path.matches(Constants.MAIN_BUNDLE_PATH_REGEX) && "deferred" !in url.query.orEmpty() -> {
+                webappLoaded = true
                 onConnectedToWebapp()
                 assetsPathHandler.inject("native/injectionScript.js")
             }
@@ -117,8 +125,12 @@ abstract class JellyfinWebViewClient(
         if (request.isForMainFrame) onErrorReceived()
     }
 
+    override fun onReceivedClientCertRequest(view: WebView, request: ClientCertRequest) {
+        webViewTls.onClientCertRequest(view, request, report = webappLoaded)
+    }
+
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
         Timber.e("Received SSL error: %s", error.toString())
-        handler.cancel()
+        webViewTls.onSslError(view, handler, error, report = webappLoaded)
     }
 }

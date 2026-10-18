@@ -18,6 +18,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader.AssetsPathHandler
@@ -33,6 +34,7 @@ import org.jellyfin.mobile.bridge.NativePlayer
 import org.jellyfin.mobile.data.entity.ServerEntity
 import org.jellyfin.mobile.databinding.FragmentWebviewBinding
 import org.jellyfin.mobile.setup.ConnectFragment
+import org.jellyfin.mobile.tls.TlsManager
 import org.jellyfin.mobile.utils.AndroidVersion
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.Constants
@@ -58,10 +60,13 @@ class WebViewFragment : Fragment(), BackPressInterceptor, JellyfinWebChromeClien
     private val nativePlayer: NativePlayer by inject()
     private lateinit var externalPlayer: ExternalPlayer
     private val mediaSegments: MediaSegments by inject()
+    private val tls by lazy { TlsManager.get(requireContext()) }
 
     lateinit var server: ServerEntity
         private set
     private var connected = false
+    private var tlsConfigVersion = 0
+    private val backStackListener = FragmentManager.OnBackStackChangedListener { forgetSslDecisionsAfterTlsChange() }
     private val timeoutRunnable = Runnable {
         handleError()
     }
@@ -151,7 +156,10 @@ class WebViewFragment : Fragment(), BackPressInterceptor, JellyfinWebChromeClien
         }
 
         // Setup WebView
+        tlsConfigVersion = tls.configVersion
         webView.initialize()
+        // The certificates screen is a fragment on top of this one, coming back does not resume it
+        parentFragmentManager.addOnBackStackChangedListener(backStackListener)
 
         webViewBinding!!.useDifferentServerButton.setOnClickListener {
             webView.removeCallbacks(timeoutRunnable)
@@ -168,12 +176,28 @@ class WebViewFragment : Fragment(), BackPressInterceptor, JellyfinWebChromeClien
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        forgetSslDecisionsAfterTlsChange()
+    }
+
+    // The WebView remembers allowing a server certificate (onReceivedSslError) until the app is restarted: forget it
+    // after the certificates changed, e.g. a removed CA must not keep the server trusted
+    private fun forgetSslDecisionsAfterTlsChange() {
+        val webView = webViewBinding?.webView ?: return
+        if (tlsConfigVersion != tls.configVersion) {
+            tlsConfigVersion = tls.configVersion
+            webView.clearSslPreferences()
+        }
+    }
+
     override fun onInterceptBackPressed(): Boolean {
         return connected && webappFunctionChannel.goBack()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        parentFragmentManager.removeOnBackStackChangedListener(backStackListener)
         webViewBinding = null
     }
 

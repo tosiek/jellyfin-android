@@ -1,6 +1,8 @@
 package org.jellyfin.mobile
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import android.webkit.WebView
 import org.jellyfin.mobile.app.apiModule
 import org.jellyfin.mobile.app.applicationModule
@@ -22,7 +24,11 @@ class JellyfinApplication : Application() {
         Timber.plant(JellyTree())
 
         // Custom CA and client certificates for all connections, must happen before any connection is made
-        TlsManager.install(this)
+        val tls = TlsManager.install(this)
+        if (isWebViewSupported()) {
+            // The WebView caches client certificate decisions, reset them when the configuration changes
+            tls.addChangeListener { Handler(Looper.getMainLooper()).post { WebView.clearClientCertPreferences(null) } }
+        }
 
         if (BuildConfig.DEBUG) {
             // Enable WebView debugging
