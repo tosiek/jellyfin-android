@@ -74,12 +74,15 @@ fun ServerSelection(
     val serverSuggestions = remember { mutableStateListOf<ServerSuggestion>() }
     var checkUrlState by remember<MutableState<CheckUrlState>> { mutableStateOf(CheckUrlState.Unchecked) }
     var externalError by remember { mutableStateOf(showExternalConnectionError) }
+    // Why the external error happened (the WebView could not load the server), from one request to the server
+    var externalErrorDetails by remember { mutableStateOf<String?>(null) }
 
     // Prefill currently selected server if available
     LaunchedEffect(Unit) {
         val server = apiClientController.loadSavedServer()
         if (server != null) {
             hostname = server.hostname
+            if (externalError) externalErrorDetails = connectionHelper.describeConnectionProblem(server.hostname)
         }
     }
 
@@ -137,7 +140,8 @@ fun ServerSelection(
                 ServerSelectionMode.ADDRESS -> AddressSelection(
                     text = hostname,
                     errorText = when {
-                        externalError -> stringResource(R.string.connection_error_cannot_connect)
+                        externalError -> stringResource(R.string.connection_error_cannot_connect) +
+                            externalErrorDetails?.let { "\n\n$it" }.orEmpty()
                         else -> (checkUrlState as? CheckUrlState.Error)?.message
                     },
                     loading = checkUrlState is CheckUrlState.Pending,

@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.ui.state.CheckUrlState
 import org.jellyfin.sdk.Jellyfin
+import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.discovery.LocalServerDiscovery
 import org.jellyfin.sdk.discovery.RecommendedServerInfo
 import org.jellyfin.sdk.discovery.RecommendedServerInfoScore
@@ -104,6 +105,17 @@ class ConnectionHelper(
         }
 
         return CheckUrlState.Error(error)
+    }
+
+    /**
+     * Asks the server at [address] for its public info once and describes why that failed,
+     * null when it answers. Used when the web client could not be loaded, the WebView only gives a generic error.
+     */
+    suspend fun describeConnectionProblem(address: String): String? = withContext(Dispatchers.IO) {
+        val api = jellyfin.createApi(baseUrl = address)
+        val error = runCatching { api.systemApi.getPublicSystemInfo() }.exceptionOrNull() ?: return@withContext null
+        Timber.i(error, "Server $address does not answer")
+        ConnectionFailure.details(context, error)
     }
 
     fun discoverServersAsFlow(): Flow<ServerDiscoveryInfo> =
