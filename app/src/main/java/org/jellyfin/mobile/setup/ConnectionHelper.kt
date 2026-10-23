@@ -75,9 +75,22 @@ class ConnectionHelper(
                         append(context.getString(R.string.connection_error_unable_to_reach_sever))
                         append(":\n")
                         append(
-                            unreachableServers.joinToString(separator = "\n") { result ->
-                                val tlsProblem = TlsMessages.describe(context, result.address, result.issues)
-                                "\u00b7 ${result.address}" + tlsProblem?.let { "\n  $it" }.orEmpty()
+                            // Addresses that failed the same way (e.g. https:// and http:// of a stopped server) share
+                            // one cause, indented under them, one line each
+                            unreachableServers.groupBy(
+                                keySelector = { result ->
+                                    val error = result.systemInfo.exceptionOrNull()
+                                    // The TLS text is more precise than the mapped cause, the raw cause is added to both
+                                    val reason = TlsMessages.describe(context, result.address, result.issues)
+                                        ?: error?.let { ConnectionFailure.classify(it).describe(context) }
+                                    listOfNotNull(reason, error?.let(ConnectionFailure::rawCause))
+                                        .joinToString(separator = "\n  ")
+                                        .ifEmpty { null }
+                                },
+                                valueTransform = { result -> result.address },
+                            ).entries.joinToString(separator = "\n") { (details, addresses) ->
+                                addresses.joinToString(separator = "\n") { "\u00b7 $it" } +
+                                    details?.let { "\n  $it" }.orEmpty()
                             },
                         )
                     }
