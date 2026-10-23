@@ -74,8 +74,17 @@ class ConnectionHelper(
                         append(context.getString(R.string.connection_error_unable_to_reach_sever))
                         append(":\n")
                         append(
-                            unreachableServers.joinToString(separator = "\n") { result ->
-                                "\u00b7 ${result.address}"
+                            // Addresses that failed the same way (e.g. https:// and http:// of a stopped server) share
+                            // one cause, indented under them, one line each
+                            unreachableServers.groupBy(
+                                keySelector = { result ->
+                                    result.systemInfo.exceptionOrNull()
+                                        ?.let { ConnectionFailure.details(context, it, separator = "\n  ") }
+                                },
+                                valueTransform = { result -> result.address },
+                            ).entries.joinToString(separator = "\n") { (details, addresses) ->
+                                addresses.joinToString(separator = "\n") { "\u00b7 $it" } +
+                                    details?.let { "\n  $it" }.orEmpty()
                             },
                         )
                     }
