@@ -82,8 +82,9 @@ fun ServerSelection(
     val serverSuggestions = remember { mutableStateListOf<ServerSuggestion>() }
     var checkUrlState by remember<MutableState<CheckUrlState>> { mutableStateOf(CheckUrlState.Unchecked) }
     var externalError by remember { mutableStateOf(showExternalConnectionError) }
-    // TLS reason of the external error, e.g. the WebView could not load the server because its certificate is untrusted
-    var externalTlsProblem by remember { mutableStateOf<String?>(null) }
+    // Why the external error happened (the WebView could not load the server): the TLS reason (e.g. an untrusted
+    // certificate) when there is one, otherwise the cause from one request to the server
+    var externalErrorDetails by remember { mutableStateOf<String?>(null) }
     // Certificates selected in the advanced section, only kept after a successful connection check
     val certificates = rememberCertificatesSectionState { TlsEndpoint.fromUrl(hostname) }
 
@@ -92,7 +93,10 @@ fun ServerSelection(
         val server = apiClientController.loadSavedServer()
         if (server != null) {
             hostname = server.hostname
-            if (externalError) externalTlsProblem = describeTlsProblem(context, server.hostname)
+            if (externalError) {
+                externalErrorDetails = describeTlsProblem(context, server.hostname)
+                    ?: connectionHelper.describeConnectionProblem(server.hostname)
+            }
         }
     }
 
@@ -158,7 +162,7 @@ fun ServerSelection(
                     text = hostname,
                     errorText = when {
                         externalError -> stringResource(R.string.connection_error_cannot_connect) +
-                            externalTlsProblem?.let { "\n\n$it" }.orEmpty()
+                            externalErrorDetails?.let { "\n\n$it" }.orEmpty()
                         else -> (checkUrlState as? CheckUrlState.Error)?.message
                     },
                     loading = checkUrlState is CheckUrlState.Pending,
