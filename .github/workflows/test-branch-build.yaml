@@ -1,6 +1,6 @@
 name: Test branch / Build
 
-# Debug APKs of this branch (mTLS work and all fixes) for testing, the artifact is kept 14 days
+# Debug APKs of this branch (mTLS work and all fixes) for testing, published as a pre-release for each commit
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -35,3 +35,13 @@ jobs:
           retention-days: 14
           if-no-files-found: error
           path: build/gh-app-publish/
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="test-build-${GITHUB_SHA::8}"
+          gh release create "$tag" build/gh-app-publish/*.apk \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Test build ${GITHUB_SHA::8}" \
+            --notes "Debug APKs of test/custom-ca-mtls-all at ${GITHUB_SHA::8}: the mTLS work and all fixes. For testing only, signed with a debug key."
