@@ -26,9 +26,9 @@
     <string name="player_error_network_failure">Nepavyko įkelti informacijos iš serverio</string>
     <string name="player_error_invalid_play_options">Klaidinga atkūrimo informacija</string>
     <string name="notification_action_stop">Sustabdyti</string>
-    <string name="notification_action_next">Sekantis</string>
+    <string name="notification_action_next">Kitas</string>
     <string name="notification_action_fast_forward">Prasukti</string>
-    <string name="notification_action_pause">Pauzė</string>
+    <string name="notification_action_pause">Pristabdyti</string>
     <string name="notification_action_rewind">Atsukti</string>
     <string name="notification_action_previous">Ankstesnis</string>
     <string name="music_notification_channel_description">Naudojamas muzikos atkūrimo valdikliams</string>
@@ -147,7 +147,7 @@
         <item quantity="other">Pašalinti atsisiuntimų</item>
     </plurals>
     <string name="network_buffer_extra_large">Labai didelis</string>
-    <string name="network_buffer_extra_large_description">Maksimalus buferis, skirtas lėtiems arba palydoviniams ryšiams</string>
+    <string name="network_buffer_extra_large_description">Didžiausias buferis, skirtas lėtiems arba palydoviniams ryšiams</string>
     <string name="downloads_empty">Kol kas nėra atsisiuntimų</string>
     <string name="downloads_empty_description">Galite atsisiųsti filmus ir TV laidas, kad galėtumėte juos žiūrėti neprisijungę. Elemento informacijos puslapyje ieškokite atsisiuntimo piktogramos.</string>
     <string name="downloading_title">Atsisiunčiama %1$s</string>
